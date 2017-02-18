@@ -1,1 +1,1 @@
-# COMPE202_personal_project
+# COMPE202 Personal Project
