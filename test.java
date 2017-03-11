@@ -12,6 +12,8 @@ public class A {
 	 
 	private Collection<D> d;
 	
+	private C c1;
+
 	public void print() {
 		
 	}
