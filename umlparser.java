@@ -86,21 +86,21 @@ public class umlparser {
 //        }
 //    }
 //	
-//	private static void changeMethods(CompilationUnit cu) {
-//        // Go through all the types in the file
-//        NodeList<TypeDeclaration<?>> types = cu.getTypes();
-//        for (TypeDeclaration<?> type : types) {
-//            // Go through all fields, methods, etc. in this type
-//            NodeList<BodyDeclaration<?>> members = type.getMembers();
-//            for (BodyDeclaration<?> member : members) {
-//                if (member instanceof MethodDeclaration) {
-//                    MethodDeclaration method = (MethodDeclaration) member;
-//                    changeMethod(method);
-//                }
-//            }
-//        }
-//    }
-//
+	private static void changeMethods(CompilationUnit cu) {
+        // Go through all the types in the file
+        NodeList<TypeDeclaration<?>> types = cu.getTypes();
+        for (TypeDeclaration<?> type : types) {
+            // Go through all fields, methods, etc. in this type
+            NodeList<BodyDeclaration<?>> members = type.getMembers();
+            for (BodyDeclaration<?> member : members) {
+                if (member instanceof MethodDeclaration) {
+                    MethodDeclaration method = (MethodDeclaration) member;
+                    changeMethod(method);
+                }
+            }
+        }
+    }
+
 //    private static void changeMethod(MethodDeclaration n) {
 //        // change the name of the method to upper case
 //        n.setName(n.getNameAsString().toUpperCase());
