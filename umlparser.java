@@ -101,10 +101,10 @@ public class umlparser {
         }
     }
 
-//    private static void changeMethod(MethodDeclaration n) {
-//        // change the name of the method to upper case
-//        n.setName(n.getNameAsString().toUpperCase());
-//    }
+    private static void changeMethod(MethodDeclaration n) {
+        // change the name of the method to upper case
+        n.setName(n.getNameAsString().toUpperCase());
+    }
 //    
 //    private static CompilationUnit createCU() {
 //        CompilationUnit cu = new CompilationUnit();
