@@ -31,20 +31,10 @@ public class umlparser {
 //        forEach(f -> System.out.println("Check field at line " + f.getBegin().get().line));
 //		new MethodVisitor().visit(compilationUnit, null);
 		
-//		System.out.println(compilationUnit.toString());
-		
-		
-		
-		
-		
-		
 		// Using yuml to draw pictures. 
 		Runtime rt = Runtime.getRuntime();
 		// Make sure the framework are working fine
-		Process pr = rt.exec("/usr/local/bin/yuml -i t.txt -o diagram.png");
-		
-		
-		
+		Process pr = rt.exec("/usr/local/bin/yuml -i t.txt -o diagram.png");	
 	}
 	
 //	private static void watch(final Process process) {
@@ -152,6 +142,4 @@ public class umlparser {
 //
 //        return cu;
 //    }
-
-
 }
