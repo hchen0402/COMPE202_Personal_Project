@@ -31,6 +31,10 @@ public class umlparser {
 //        forEach(f -> System.out.println("Check field at line " + f.getBegin().get().line));
 //		new MethodVisitor().visit(compilationUnit, null);
 		
+		
+		
+		
+		
 		// Using yuml to draw pictures. 
 		Runtime rt = Runtime.getRuntime();
 		// Make sure the framework are working fine
@@ -91,10 +95,10 @@ public class umlparser {
 //        }
 //    }
 //
-//    private static void changeMethod(MethodDeclaration n) {
-//        // change the name of the method to upper case
-//        n.setName(n.getNameAsString().toUpperCase());
-//    }
+    private static void changeMethod(MethodDeclaration n) {
+        // change the name of the method to upper case
+        n.setName(n.getNameAsString().toUpperCase());
+    }
     
     private static CompilationUnit createCU() {
         CompilationUnit cu = new CompilationUnit();
