@@ -21,17 +21,17 @@ public class umlparser {
 	
 		FileInputStream in = new FileInputStream("/Users/hanchen/Dropbox/coding_interview/java/COMPE202_Personal_Project/test.java");
 
-//		CompilationUnit compilationUnit = JavaParser.parse(in);
-//			        compilationUnit.getNodesByType(FieldDeclaration.class).stream().
-//			        filter(f -> f.getModifiers().contains(PRIVATE)).
-//			        forEach(f -> System.out.println("Check field at line " + f.getBegin().get().line));
-//
-//			        Optional<ClassOrInterfaceDeclaration> classA = compilationUnit.getClassByName("A");
-//		compilationUnit.getNodesByType(FieldDeclaration.class).stream().
-//        filter(f -> f.getModifiers().contains("public") && 
-//                !f.getModifiers().contains("static")).
-//        forEach(f -> System.out.println("Check field at line " + f.getBegin().get().line));
-//		new MethodVisitor().visit(compilationUnit, null);
+		CompilationUnit compilationUnit = JavaParser.parse(in);
+			        compilationUnit.getNodesByType(FieldDeclaration.class).stream().
+			        filter(f -> f.getModifiers().contains(PRIVATE)).
+			        forEach(f -> System.out.println("Check field at line " + f.getBegin().get().line));
+
+			        Optional<ClassOrInterfaceDeclaration> classA = compilationUnit.getClassByName("A");
+		compilationUnit.getNodesByType(FieldDeclaration.class).stream().
+        filter(f -> f.getModifiers().contains("public") && 
+                !f.getModifiers().contains("static")).
+        forEach(f -> System.out.println("Check field at line " + f.getBegin().get().line));
+		new MethodVisitor().visit(compilationUnit, null);
 		
 		
 		
