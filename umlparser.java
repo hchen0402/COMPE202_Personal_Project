@@ -43,44 +43,44 @@ public class umlparser {
 		Process pr = rt.exec("/usr/local/bin/yuml -i t.txt -o diagram.png");	
 	}
 	
-//	private static void watch(final Process process) {
-//	    new Thread() {
-//	        public void run() {
-//	            BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
-//	            String line = null; 
-//	            try {
-//	                while ((line = input.readLine()) != null) {
-//	                    System.out.println(line);
-//	                }
-//	            } catch (IOException e) {
-//	                e.printStackTrace();
-//	            }
-//	        }
-//	    }.start();
-//	}
-//
-//	
-//	private static class MethodVisitor extends VoidVisitorAdapter<Void> {
-//		@Override
-//		public void visit(MethodDeclaration n, Void arg) {
-//			/* here you can access the attributes of the method.
-//	             this method will be called for all methods in this 
-//	             CompilationUnit, including inner class methods */
-//			System.out.println(n.getName());
-//			super.visit(n, arg);
-//		}
-//	}
-//	
-//	private static class MethodChangerVisitor extends VoidVisitorAdapter<Void> {
-//        @Override
-//        public void visit(MethodDeclaration n, Void arg) {
-//            // change the name of the method to upper case
-//            n.setName(n.getNameAsString().toUpperCase());
-//
-//            // add a new parameter to the method
-//            n.addParameter("int", "value");
-//        }
-//    }
+	private static void watch(final Process process) {
+	    new Thread() {
+	        public void run() {
+	            BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()));
+	            String line = null; 
+	            try {
+	                while ((line = input.readLine()) != null) {
+	                    System.out.println(line);
+	                }
+	            } catch (IOException e) {
+	                e.printStackTrace();
+	            }
+	        }
+	    }.start();
+	}
+
+	
+	private static class MethodVisitor extends VoidVisitorAdapter<Void> {
+		@Override
+		public void visit(MethodDeclaration n, Void arg) {
+			/* here you can access the attributes of the method.
+	             this method will be called for all methods in this 
+	             CompilationUnit, including inner class methods */
+			System.out.println(n.getName());
+			super.visit(n, arg);
+		}
+	}
+	
+	private static class MethodChangerVisitor extends VoidVisitorAdapter<Void> {
+        @Override
+        public void visit(MethodDeclaration n, Void arg) {
+            // change the name of the method to upper case
+            n.setName(n.getNameAsString().toUpperCase());
+
+            // add a new parameter to the method
+            n.addParameter("int", "value");
+        }
+    }
 //	
 //	private static void changeMethods(CompilationUnit cu) {
 //        // Go through all the types in the file
