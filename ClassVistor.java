@@ -1,10 +1,13 @@
 import java.util.*;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.BodyDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
@@ -15,10 +18,11 @@ public class ClassVistor extends VoidVisitorAdapter<Void>{
 	private List<TypeDeclaration<?>> typeDeclaration;
 	private StringBuilder intermediateCode;
 	private PrimitiveAndStringType checkType;
-	private boolean isInterface, addAttribute;
+	private boolean isInterface, addAttribute, addMethod;
 	private String className;
-
-	private Map<String, String> instanceVariablesMap = new HashMap<String, String>();
+	private List<String> attributes, methods;
+	private List<String> relationList;
+	private Map<String, String> relationMap;
 
 	public ClassVistor(CompilationUnit cu) {
 		this.cu = cu;
@@ -27,12 +31,27 @@ public class ClassVistor extends VoidVisitorAdapter<Void>{
 		this.checkType = new PrimitiveAndStringType();
 		this.isInterface = false;
 		this.addAttribute = false;
+		this.addMethod = false;
 		this.className = null;
 		this.intermediateCode.append("[");
+		this.attributes = new ArrayList<String> ();
+		this.methods = new ArrayList<String> ();
+		this.relationList = new ArrayList<String> ();
+		this.relationMap = new HashMap<String, String>();
 
 		checkIsInterface();
-
-
+	}
+	
+	public List<String> getRelations() {
+		return this.relationList;
+	}
+	
+	public Map<String, String> getRelationMap() {
+		return this.relationMap;
+	}
+	
+	public String getClassName() {
+		return this.className;
 	}
 
 	public CompilationUnit getCompilationUnit() {
@@ -56,7 +75,8 @@ public class ClassVistor extends VoidVisitorAdapter<Void>{
 		}
 	}
 
-	public void visitInstanceVariables() {
+	public void visitInstance() {
+		
 		if (this.isInterface) {
 			this.intermediateCode.append("<<interface>>;" + this.className);
 		} else {
@@ -65,69 +85,174 @@ public class ClassVistor extends VoidVisitorAdapter<Void>{
 		for (TypeDeclaration<?> typeDec : this.typeDeclaration) {
 			List<BodyDeclaration<?>> members = typeDec.getMembers();
 			if(members != null) {
-				for (BodyDeclaration<?> member : members) {
-				
-
+				for (int i = 0; i < members.size(); i++) {
+					BodyDeclaration<?> member = members.get(i);
+					
 					FieldDeclaration field = null;
+					MethodDeclaration method = null;
+					ConstructorDeclaration constructor = null;
+
 					if (member instanceof FieldDeclaration) {
 						field = (FieldDeclaration) member;
-
+						this.visitAttributes(field);
 					}
 
-					if (field != null) {
-						String modifiers = null;
-						
-
-						Type type = field.getMaximumCommonType();
-
-						if (this.checkType.isPrimitive(type)) {
-							if (!this.addAttribute) {
-								this.intermediateCode.append("|");
-								this.addAttribute = true;
-							}
-							if (field.getModifiers().toString().equals("[PRIVATE]")) {
-								this.intermediateCode.append("-");
-							} else if (field.getModifiers().toString().equals("[PUBLIC]")) {
-								this.intermediateCode.append("+");
-							} 
-							this.intermediateCode.append(field.getVariables().get(0).getNameAsString());
-							this.intermediateCode.append(":");
-							if (this.checkType.isPrimitiveArray(type)) {
-								this.intermediateCode.append(field.getElementType().toString() + "(*)");
-
-							} else {
-								this.intermediateCode.append(field.getElementType().toString());
-							}
-							this.intermediateCode.append(";");
-						}
-
-
-						//		        		System.out.println(field.getModifiers());
-						//		        		System.out.println(field.getMaximumCommonType());
-						//		        		System.out.println(field.getVariables().get(0).getNameAsString());
-						//		        		System.out.println();
-
+					if (member instanceof ConstructorDeclaration) {
+						constructor = (ConstructorDeclaration) member;
+						this.visitConstructor(constructor);
 					}
-					//		        //Print the field's name 
-					//		        System.out.println(field.getVariables().get(0).getId().getName());
-					//		        //Print the field's init value, if not null
-					//		        Object initValue = field.getVariables().get(0).getInit();
-					//		        if(initValue != null) {
-					//		             System.out.println(field.getVariables().get(0).getInit().toString());
+					
+					if (member instanceof MethodDeclaration) {
+						method = (MethodDeclaration) member;
+						this.visitMethods(method);
+					}
 				}  
 			}
-			this.intermediateCode.append("]");
 		}
+		
+		if (this.addAttribute) {
+			if (this.isInterface)
+				this.intermediateCode.append(";");
+			else
+				this.intermediateCode.append("|");
+			for (int j = 0; j < this.attributes.size(); j++) {
+				this.intermediateCode.append(this.attributes.get(j));
+				if (j != this.attributes.size()-1) {
+					this.intermediateCode.append(";");
+				}
+			}
+		}
+		
+		if (this.addMethod) {
+			if (this.isInterface)
+				this.intermediateCode.append(";");
+			else
+				this.intermediateCode.append("|");
+			for (int j = 0; j < this.methods.size(); j++) {
+				this.intermediateCode.append(this.methods.get(j));
+				if (j != this.methods.size()-1) {
+					this.intermediateCode.append(";");
+				}
+			}
+		}
+		this.intermediateCode.append("]");
 	}
 
-	private static class MethodVisitor extends VoidVisitorAdapter<Void> {
-		@Override
-		public void visit(MethodDeclaration n, Void arg) {
-			/* here you can access the attributes of the method.
-             this method will be called for all methods in this 
-             CompilationUnit, including inner class methods */
-			System.out.println(n.getName() + "here");
-			super.visit(n, arg);
+	public void visitAttributes(FieldDeclaration field) {
+		StringBuilder result = new StringBuilder();
+		
+		if (field != null) {
+			String modifiers = null;
+			Type type = field.getMaximumCommonType();
+
+			if (this.checkType.isPrimitive(type)) {
+				if (field.getModifiers().toString().equals("[PRIVATE]")) {
+					if (!this.addAttribute) {
+						this.addAttribute = true;
+					}
+					result.append("-");
+				} else if (field.getModifiers().toString().equals("[PUBLIC]")) {
+					if (!this.addAttribute) {
+						this.addAttribute = true;
+					}
+					result.append("+");
+				} else {
+					return;
+				}
+				result.append(field.getVariables().get(0).getNameAsString());
+				result.append(":");
+				if (this.checkType.isPrimitiveArray(type)) {
+					result.append(field.getElementType().toString() + "(*)");
+				} else {
+					result.append(field.getElementType().toString());
+				}
+				this.attributes.add(result.toString());
+			} else if (type.toString().contains("Collection")) {
+				String name = type.toString().substring(11, type.toString().length()-1); 
+				this.relationList.add(name);
+				this.relationMap.put(name, "1-0..*");
+			} else {
+				String name = type.toString();
+				this.relationList.add(name);
+				this.relationMap.put(name, "-1");
+			}
+		} 
+	}
+	
+	public void visitConstructor(ConstructorDeclaration constructor) {
+		StringBuilder result = new StringBuilder();
+		
+		if (constructor != null) {
+			String modifiers = null;
+			NodeList<Parameter> parameters = constructor.getParameters();						
+			
+			if (constructor.getModifiers().toString().equals("[PUBLIC]")) {
+				if (!this.addMethod) {
+					this.addMethod = true;
+				}
+				result.append("+");
+			} else {
+				return;
+			}
+			
+			result.append(constructor.getNameAsString() + "(");
+			
+			for (int i = 0; i < parameters.size(); i++) {
+				result.append(parameters.get(i).getNameAsString());
+				result.append(":");
+				Type type = parameters.get(i).getType();
+				if (this.checkType.isPrimitiveArray(type)) {
+					result.append(type.toString().substring(0, type.toString().length()-2) + "(*)");
+				} else {
+					result.append(type.toString());
+				}
+				if (i != parameters.size()-1) {
+					result.append(",");
+				}
+			}
+			result.append(")");
+
+			this.methods.add(result.toString());
+		}
+		
+	}
+	
+	public void visitMethods(MethodDeclaration method) {
+		StringBuilder result = new StringBuilder();
+		
+		if (method != null) {
+			String modifiers = null;
+			NodeList<Parameter> parameters = method.getParameters();						
+
+			if (method.getModifiers().toString().equals("[PUBLIC]") || method.getModifiers().toString().equals("[PUBLIC, ABSTRACT]")
+					|| method.getModifiers().toString().equals("[PUBLIC, STATIC]")) {
+				if (!this.addMethod) {
+					this.addMethod = true;
+				}
+				result.append("+");
+			} else {
+				return;
+			}
+			
+			result.append(method.getNameAsString() + "(");
+			
+			for (int i = 0; i < parameters.size(); i++) {
+				result.append(parameters.get(i).getNameAsString());
+				result.append(":");
+				Type type = parameters.get(i).getType();
+				if (this.checkType.isPrimitiveArray(type)) {
+					result.append(type.toString().substring(0, type.toString().length()-2) + "(*)");
+				} else {
+					result.append(type.toString());
+				}
+				if (i != parameters.size()-1) {
+					result.append(",");
+				}
+			}
+			result.append(")");
+			result.append(":" + method.getType());
+
+			this.methods.add(result.toString());
 		}
 	}
 }
