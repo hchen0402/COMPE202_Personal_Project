@@ -6,7 +6,9 @@ public enum Relations {
 	COMPOSITION("++-1>"),
 	INHERIANCE("^-"),
 	INTERFACE_INHERIANCE("^-.-"),
-	DEPENDENCIES("-.->");
+	DEPENDENCIES("uses-.->"),
+	CARDINALITY("1-0..*"),
+	SIMPLEASSOCIATION("-");
 	
 	private final String label;
 	

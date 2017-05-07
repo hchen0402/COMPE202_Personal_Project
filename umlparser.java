@@ -2,6 +2,7 @@ import java.io.*;
 import java.util.*;
 import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 
 public class umlparser {
 	public static final String INTERMEDIATE = "intermediate.txt";
@@ -9,7 +10,8 @@ public class umlparser {
 
 	public static void main(String[] args) throws Exception {
 		Map<String, String> nameParsingMap = new HashMap<String, String> ();
-		
+		Map<String, ClassVisitor> nameVisitorMap = new HashMap<String, ClassVisitor> ();
+
 		File[] files = null;
 		String intermediate_code = null;
 		File file = new File(INTERMEDIATE);
@@ -30,7 +32,7 @@ public class umlparser {
 		}
 
 		if (files != null) 
-			intermediate_code = parsing(files, nameParsingMap);
+			intermediate_code = parsing(files, nameParsingMap, nameVisitorMap);
 
 		fw = new FileWriter(file);
 		bw = new BufferedWriter(fw);
@@ -45,34 +47,117 @@ public class umlparser {
 		Process pr = rt.exec(YUMLCOMMAND + " -i " + INTERMEDIATE + " -o " + output_image);	
 	}
 
-	public static String parsing(File[] files, Map<String, String> nameParsingMap) {
+	public static String parsing(File[] files, Map<String, String> nameParsingMap, Map<String, ClassVisitor> nameVisitorMap) {
 		CompilationUnit compilationUnit[] = new CompilationUnit[files.length];
 		StringBuilder output_content = new StringBuilder();
-		List<ClassVistor> classVistors = new ArrayList<ClassVistor> ();
+		List<ClassVisitor> classVistors = new ArrayList<ClassVisitor> ();
 		Set<String> classes = new HashSet<String> ();
+		Map<String, String> twoWayMatching = new HashMap<String, String> ();
+		String main_component = null;
 
 		for (int i = 0; i < compilationUnit.length; i++) {
 			try {
 				compilationUnit[i] = JavaParser.parse(files[i]);
-				ClassVistor classVistor = new ClassVistor(compilationUnit[i]);
-				classVistor.visitInstance();
-				classVistors.add(classVistor);
-				nameParsingMap.put(classVistor.getClassName(), classVistor.toString());
+				ClassVisitor classVisitor = new ClassVisitor(compilationUnit[i]);
+				classVisitor.visitInstance();
+				classVistors.add(classVisitor);
+				nameVisitorMap.put(classVisitor.getClassName(), classVisitor);
+				nameParsingMap.put(classVisitor.getClassName(), classVisitor.toString());
 			} catch (FileNotFoundException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		
+
 		for (int i = 0; i < classVistors.size(); i++) {
-			ClassVistor currentVisitor = classVistors.get(i);
+			ClassVisitor currentVisitor = classVistors.get(i);
+			if (currentVisitor.hasMain()) {
+				for (String ele: classVistors.get(i).getMainComponents()) {
+					if (nameParsingMap.containsKey(ele)) {
+						main_component = currentVisitor.toString() + Relations.DEPENDENCIES.toString() + nameParsingMap.get(ele);
+					}
+				}
+			}
+
 			if (currentVisitor.getRelations().size() != 0) {
-				classes.add(currentVisitor.getClassName());
 				for (int j = 0; j < currentVisitor.getRelations().size(); j++) {
 					String name = currentVisitor.getRelations().get(j);
-					if (!classes.contains(name)) {
-						output_content.append(currentVisitor.toString() + currentVisitor.getRelationMap().get(name) + nameParsingMap.get(name));
-						classes.add(name);
+					if (currentVisitor.getRelationMap().get(name).contains(Relations.INHERIANCE.toString()) 
+							|| currentVisitor.getRelationMap().get(name).contains(Relations.INTERFACE_INHERIANCE.toString())) {
+						for (int k = 0; k < currentVisitor.getRelationMap().get(name).size(); k++) {
+							String cur = null;
+							if (currentVisitor.getRelationMap().get(name).get(k).equals(Relations.DEPENDENCIES.toString()))
+								cur = currentVisitor.toString() + currentVisitor.getRelationMap().get(name).get(k) + nameParsingMap.get(name);
+							else
+								cur = nameParsingMap.get(name) + currentVisitor.getRelationMap().get(name).get(k) + currentVisitor.toString();
+							if (twoWayMatching.containsKey(name)) {
+								if (!output_content.toString().contains(cur) && (!twoWayMatching.get(name).equals(currentVisitor.getClassName()))) {
+									output_content.append(cur);
+									twoWayMatching.put(currentVisitor.getClassName(), name);
+								}
+							} else {
+								if (!output_content.toString().contains(cur)) {
+									output_content.append(cur);
+									twoWayMatching.put(currentVisitor.getClassName(), name);
+								}
+							}
+							if (k != currentVisitor.getRelationMap().get(name).size()-1) {
+								output_content.append("\n");
+							}
+						}
+					} else if (currentVisitor.getRelationMap().get(name).contains(Relations.DEPENDENCIES.toString())) {
+						for (int k = 0; k < currentVisitor.getRelationMap().get(name).size(); k++) {
+							String cur = null;
+							if (currentVisitor.getRelationMap().get(name).get(k).equals(Relations.INHERIANCE.toString()) 
+									|| currentVisitor.getRelationMap().get(name).get(k).equals(Relations.INTERFACE_INHERIANCE.toString())) 
+								cur = nameParsingMap.get(name) + currentVisitor.getRelationMap().get(name).get(k) + currentVisitor.toString();
+							else {
+								if (nameVisitorMap.get(name) != null 
+										&& (nameVisitorMap.get(name).isInterface() || currentVisitor.getRelationMap().get(name).get(k).equals(Relations.SIMPLEASSOCIATION.toString()))) {
+									cur = currentVisitor.toString() + currentVisitor.getRelationMap().get(name).get(k) + nameParsingMap.get(name);
+								}
+							}
+							if (cur != null) {
+								if (twoWayMatching.containsKey(currentVisitor.getClassName())) {
+									if (!output_content.toString().contains(cur) && (!twoWayMatching.get(currentVisitor.getClassName()).equals(name))) {
+										output_content.append(cur);
+										twoWayMatching.put(name, currentVisitor.getClassName());
+									} 
+								} else {
+									if (!output_content.toString().contains(cur)) {
+										output_content.append(cur);
+										twoWayMatching.put(name, currentVisitor.getClassName());
+									} 
+								}
+								if (k != currentVisitor.getRelationMap().get(name).size()-1) {
+									output_content.append("\n");
+								}
+							}
+						}
+					} else {
+						for (int k = 0; k < currentVisitor.getRelationMap().get(name).size(); k++) {
+							String cur = null;
+							if (currentVisitor.getRelationMap().get(name).get(k).equals(Relations.INHERIANCE.toString()) 
+									|| currentVisitor.getRelationMap().get(name).get(k).equals(Relations.INTERFACE_INHERIANCE.toString())) 
+								cur = nameParsingMap.get(name) + currentVisitor.getRelationMap().get(name).get(k) + currentVisitor.toString();
+							else
+								cur = currentVisitor.toString() + currentVisitor.getRelationMap().get(name).get(k) + nameParsingMap.get(name);
+							if (twoWayMatching.containsKey(currentVisitor.getClassName())) {
+								if (!output_content.toString().contains(cur) && (!twoWayMatching.get(currentVisitor.getClassName()).equals(name))) {
+									output_content.append(cur);
+									twoWayMatching.put(name, currentVisitor.getClassName());
+								} 
+							} else {
+								if (!output_content.toString().contains(cur)) {
+									output_content.append(cur);
+									twoWayMatching.put(name, currentVisitor.getClassName());
+								} 
+							}
+							if (k != currentVisitor.getRelationMap().get(name).size()-1) {
+								output_content.append("\n");
+							}
+
+						}
 					}
 					if (j != currentVisitor.getRelations().size()-1) {
 						output_content.append("\n");
@@ -86,10 +171,11 @@ public class umlparser {
 			if (i != classVistors.size()-1)
 				output_content.append("\n");
 		}
-		System.out.println(output_content);
 
+		if (main_component != null) {
+			output_content.append("\n" + main_component);
+		}
+//		System.out.println(output_content);
 		return output_content.toString();
 	}
-
-
 }
